@@ -11,6 +11,7 @@ on:
 jobs:
   build-wheels:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
@@ -47,6 +48,7 @@ jobs:
               pkg install -y python python-pip clang rust make cmake pkg-config ninja python-numpy &&
               export CFLAGS='-Wno-error=implicit-function-declaration' &&
               export MAKEFLAGS='-j1' &&
+              export BLIS_ARCH=generic &&
               pip wheel ${{ matrix.package }} -w /build/dist --no-cache-dir --no-deps &&
               chmod -R a+rw /build/dist
             "
