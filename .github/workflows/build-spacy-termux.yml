@@ -45,11 +45,11 @@ jobs:
             termux/termux-docker:latest \
             bash -c "
               pkg update -y &&
-              pkg install -y python python-pip clang rust make cmake pkg-config ninja &&
+              pkg install -y python python-pip clang rust make cmake pkg-config ninja python-numpy &&
               export CFLAGS='-Wno-error=implicit-function-declaration' &&
               export MAKEFLAGS='-j1' &&
               export BLIS_ARCH=generic &&
-              pip install --no-cache-dir 'numpy<2.1' &&
+              pip install --no-cache-dir 'Cython>=3.0' &&
               mkdir -p /build/dist &&
               pip wheel ${{ matrix.package }} -w /build/dist --no-cache-dir --no-deps
             ")
