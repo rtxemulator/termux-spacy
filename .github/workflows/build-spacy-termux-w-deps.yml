@@ -1,0 +1,101 @@
+name: Build spaCy wheels for Termux
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: 'Termux Python version to target (e.g. 3.12)'
+        required: true
+        default: '3.12'
+
+jobs:
+  build-wheels:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          # - cymem
+          # - murmurhash
+          # - preshed
+          # - blis
+          # - "thinc==8.3.13"
+          - spacy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache pip/cargo inside container volume
+        uses: actions/cache@v4
+        with:
+          path: termux-cache
+          key: termux-${{ matrix.package }}-${{ hashFiles('**/workflow.yml') }}
+          restore-keys: |
+            termux-${{ matrix.package }}-
+
+      - name: Pull Termux aarch64 image
+        run: docker pull termux/termux-docker:aarch64
+
+      - name: Build wheel in Termux container (aarch64)
+        run: |
+          mkdir -p dist termux-cache
+          CID=$(docker create \
+            -v ${{ github.workspace }}/termux-cache:/root/.cache \
+            -e ANDROID_API_LEVEL=24 \
+            termux/termux-docker:aarch64 \
+            bash -c "
+              pkg update -y &&
+              pkg install -y python python-pip clang rust make cmake pkg-config ninja python-numpy &&
+              export CFLAGS='-Wno-error=implicit-function-declaration' &&
+              export MAKEFLAGS='-j1' &&
+              export BLIS_ARCH=generic &&
+              export ANDROID_API_LEVEL=24 &&
+              mkdir -p \$HOME/dist &&
+              pip wheel ${{ matrix.package }} -w \$HOME/dist --no-cache-dir
+            ")
+          docker start -a "$CID"
+          docker cp "$CID:/data/data/com.termux/files/home/dist/." dist/
+          docker rm "$CID"
+          ls -la dist/
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ strategy.job-index }}
+          path: dist/*.whl
+
+  bundle:
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: all-wheels
+          pattern: wheel-*
+          merge-multiple: true
+
+      - name: Bundle into single artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spacy-termux-wheels-bundle
+          path: all-wheels/*.whl
+
+  smoke-test:
+    needs: bundle
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: spacy-termux-wheels-bundle
+          path: wheels
+
+      - name: Import test inside Termux container (aarch64)
+        run: |
+          docker run --rm -v ${{ github.workspace }}/wheels:/wheels \
+            termux/termux-docker:aarch64 \
+            bash -c "
+              pkg install -y python python-pip &&
+              pip install /wheels/*.whl --no-cache-dir &&
+              python -c 'import spacy; print(spacy.__version__)'
+            "
