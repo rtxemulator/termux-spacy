@@ -39,19 +39,24 @@ jobs:
       - name: Build wheel in Termux container
         run: |
           mkdir -p dist termux-cache
-          docker run --rm --user root \
-            -v ${{ github.workspace }}/dist:/build/dist \
+          CID=$(docker create \
             -v ${{ github.workspace }}/termux-cache:/root/.cache \
+            -e ANDROID_API_LEVEL=24 \
             termux/termux-docker:latest \
             bash -c "
               pkg update -y &&
-              pkg install -y python python-pip clang rust make cmake pkg-config ninja python-numpy &&
+              pkg install -y python python-pip clang rust make cmake pkg-config ninja &&
               export CFLAGS='-Wno-error=implicit-function-declaration' &&
               export MAKEFLAGS='-j1' &&
               export BLIS_ARCH=generic &&
-              pip wheel ${{ matrix.package }} -w /build/dist --no-cache-dir --no-deps &&
-              chmod -R a+rw /build/dist
-            "
+              pip install --no-cache-dir 'numpy<2.1' &&
+              mkdir -p /build/dist &&
+              pip wheel ${{ matrix.package }} -w /build/dist --no-cache-dir --no-deps
+            ")
+          docker start -a "$CID"
+          docker cp "$CID:/build/dist/." dist/
+          docker rm "$CID"
+          ls -la dist/
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
