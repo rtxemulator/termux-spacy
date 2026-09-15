@@ -1,4 +1,4 @@
-name: Build spaCy wheels for Termux
+name: Build spaCy wheel with deps for Termux
 
 on:
   workflow_dispatch:
