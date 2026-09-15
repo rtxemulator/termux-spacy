@@ -50,11 +50,11 @@ jobs:
               export MAKEFLAGS='-j1' &&
               export BLIS_ARCH=generic &&
               pip install --no-cache-dir 'Cython>=3.0' &&
-              mkdir -p /build/dist &&
-              pip wheel ${{ matrix.package }} -w /build/dist --no-cache-dir --no-deps
+              mkdir -p /root/build/dist &&
+              pip wheel ${{ matrix.package }} -w /root/build/dist --no-cache-dir --no-deps
             ")
           docker start -a "$CID"
-          docker cp "$CID:/build/dist/." dist/
+          docker cp "$CID:/root/build/dist/." dist/
           docker rm "$CID"
           ls -la dist/
 
