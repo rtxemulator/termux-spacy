@@ -33,16 +33,19 @@ jobs:
           restore-keys: |
             termux-${{ matrix.package }}-
 
-      - name: Pull Termux Docker image
-        run: docker pull termux/termux-docker:latest
+      - name: Pull Termux aarch64 image and enable QEMU
+        run: |
+          docker run --rm --privileged aptman/qus -s -- -p aarch64
+          docker pull termux/termux-docker:aarch64
 
-      - name: Build wheel in Termux container
+      - name: Build wheel in Termux container (aarch64)
         run: |
           mkdir -p dist termux-cache
           CID=$(docker create \
+            --platform linux/arm64 \
             -v ${{ github.workspace }}/termux-cache:/root/.cache \
             -e ANDROID_API_LEVEL=24 \
-            termux/termux-docker:latest \
+            termux/termux-docker:aarch64 \
             bash -c "
               pkg update -y &&
               pkg install -y python python-pip clang rust make cmake pkg-config ninja python-numpy &&
@@ -50,11 +53,11 @@ jobs:
               export MAKEFLAGS='-j1' &&
               export BLIS_ARCH=generic &&
               pip install --no-cache-dir 'Cython>=3.0' &&
-              mkdir -p /root/build/dist &&
-              pip wheel ${{ matrix.package }} -w /root/build/dist --no-cache-dir --no-deps
+              mkdir -p /build/dist &&
+              pip wheel ${{ matrix.package }} -w /build/dist --no-cache-dir --no-deps
             ")
           docker start -a "$CID"
-          docker cp "$CID:/root/build/dist/." dist/
+          docker cp "$CID:/build/dist/." dist/
           docker rm "$CID"
           ls -la dist/
 
@@ -90,10 +93,13 @@ jobs:
           name: spacy-termux-wheels-bundle
           path: wheels
 
-      - name: Import test inside Termux container
+      - name: Enable QEMU for aarch64
+        run: docker run --rm --privileged aptman/qus -s -- -p aarch64
+
+      - name: Import test inside Termux container (aarch64)
         run: |
-          docker run --rm -v ${{ github.workspace }}/wheels:/wheels \
-            termux/termux-docker:latest \
+          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}/wheels:/wheels \
+            termux/termux-docker:aarch64 \
             bash -c "
               pkg install -y python python-pip &&
               pip install /wheels/*.whl --no-cache-dir &&
