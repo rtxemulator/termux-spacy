@@ -51,7 +51,7 @@ jobs:
               export BLIS_ARCH=generic &&
               export ANDROID_API_LEVEL=24 &&
               pip install --no-cache-dir 'Cython>=3.0' &&
-              pip install --no-cache-dir pydantic-core --extra-index-url https://eutalix.github.io/android-pydantic-core/ &&
+              pip install --no-cache-dir https://github.com/Goplr/android-pydantic-core/releases/download/v2.46.5/pydantic_core-2.46.5-cp314-cp314-linux_aarch64.android_24_arm64_v8a.whl &&
               mkdir -p \$HOME/dist &&
               pip wheel ${{ matrix.package }} -w \$HOME/dist --no-cache-dir --no-deps
             ")
