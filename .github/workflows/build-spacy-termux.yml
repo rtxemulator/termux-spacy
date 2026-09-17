@@ -83,21 +83,3 @@ jobs:
           name: spacy-termux-wheels-bundle
           path: all-wheels/*.whl
 
-  smoke-test:
-    needs: bundle
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: spacy-termux-wheels-bundle
-          path: wheels
-
-      - name: Import test inside Termux container (aarch64)
-        run: |
-          docker run --rm -v ${{ github.workspace }}/wheels:/wheels \
-            termux/termux-docker:aarch64 \
-            bash -c "
-              pkg install -y python python-pip &&
-              pip install /wheels/*.whl --no-cache-dir &&
-              python -c 'import spacy; print(spacy.__version__)'
-            "

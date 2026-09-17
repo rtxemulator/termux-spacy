@@ -2,11 +2,6 @@ name: Build numpy wheel for Termux
 
 on:
   workflow_dispatch:
-    # inputs:
-      # python_version:
-        # description: 'Termux Python version to target (e.g. 3.12)'
-        # required: true
-        # default: '3.12'
 
 jobs:
   build-wheels:
