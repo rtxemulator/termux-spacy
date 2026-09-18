@@ -6,7 +6,7 @@ on:
       python_version:
         description: 'Termux Python version to target (e.g. 3.12)'
         required: true
-        default: '3.12'
+        default: '3.14'
 
 jobs:
   build-wheels:
@@ -52,6 +52,9 @@ jobs:
               export BLIS_ARCH=generic &&
               export ANDROID_API_LEVEL=24 &&
               pip install --no-cache-dir 'Cython==3.1.6' &&
+              python -c "import Cython; print('Cython:', Cython.__version__)" &&
+              python -c "import sysconfig; print('SIZEOF_SIZE_T:', sysconfig.get_config_var('SIZEOF_SIZE_T')); print('SIZEOF_VOID_P:', sysconfig.get_config_var('SIZEOF_VOID_P'))" &&
+              clang --version &&
               pip install --no-cache-dir https://github.com/Goplr/android-pydantic-core/releases/download/v2.46.5/pydantic_core-2.46.5-cp314-cp314-linux_aarch64.android_24_arm64_v8a.whl &&
               mkdir -p \$HOME/dist &&
               pip wheel ${{ matrix.package }} -w \$HOME/dist --no-cache-dir --no-deps &&
