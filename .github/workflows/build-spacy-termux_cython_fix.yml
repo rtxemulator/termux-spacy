@@ -21,7 +21,7 @@ jobs:
           - preshed
           - blis
           - "thinc==8.3.13"
-          - spacy
+          - "spacy==3.8.16"
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +54,10 @@ jobs:
               pip install --no-cache-dir 'Cython==3.1.6' &&
               pip install --no-cache-dir https://github.com/Goplr/android-pydantic-core/releases/download/v2.46.5/pydantic_core-2.46.5-cp314-cp314-linux_aarch64.android_24_arm64_v8a.whl &&
               mkdir -p \$HOME/dist &&
-              pip wheel 'spacy==3.8.16' -w \$HOME/dist --no-cache-dir --no-deps
+              pip wheel ${{ matrix.package }} -w \$HOME/dist --no-cache-dir --no-deps &&
+              python -m zipfile -t \$HOME/dist/*.whl &&
+              ls -lh \$HOME/dist/*.whl &&
+              sha256sum \$HOME/dist/*.whl
             ")
           docker start -a "$CID"
           docker cp "$CID:/data/data/com.termux/files/home/dist/." dist/
