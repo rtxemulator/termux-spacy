@@ -51,13 +51,13 @@ jobs:
               export MAKEFLAGS='-j1' &&
               export BLIS_ARCH=generic &&
               export ANDROID_API_LEVEL=24 &&
-              pip install --no-cache-dir 'Cython==3.1.6' &&
+              pip install --no-cache-dir 'Cython==3.1.5' &&
               python -c "import Cython; print('Cython:', Cython.__version__)" &&
               python -c "import sysconfig; print('SIZEOF_SIZE_T:', sysconfig.get_config_var('SIZEOF_SIZE_T')); print('SIZEOF_VOID_P:', sysconfig.get_config_var('SIZEOF_VOID_P'))" &&
               clang --version &&
               pip install --no-cache-dir https://github.com/Goplr/android-pydantic-core/releases/download/v2.46.5/pydantic_core-2.46.5-cp314-cp314-linux_aarch64.android_24_arm64_v8a.whl &&
               mkdir -p \$HOME/dist &&
-              pip wheel ${{ matrix.package }} -w \$HOME/dist --no-cache-dir --no-deps &&
+              pip wheel ${{ matrix.package }} -w \$HOME/dist --no-cache-dir --no-deps --no-build-isolation &&
               python -m zipfile -t \$HOME/dist/*.whl &&
               ls -lh \$HOME/dist/*.whl &&
               sha256sum \$HOME/dist/*.whl
@@ -89,4 +89,27 @@ jobs:
         with:
           name: spacy-termux-wheels-bundle
           path: all-wheels/*.whl
+
+  smoke-test:
+    needs: bundle
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: spacy-termux-wheels-bundle
+          path: wheels
+
+      - name: Import test inside Termux container (aarch64)
+        run: |
+          docker run --rm -v ${{ github.workspace }}/wheels:/wheels \
+            termux/termux-docker:aarch64 \
+            bash -c "
+              pkg install -y python python-pip python-numpy &&
+              ls -la /wheels/ &&
+              pip install /wheels/*.whl --no-deps --no-cache-dir &&
+              pip install https://github.com/Goplr/android-pydantic-core/releases/download/v2.46.5/pydantic_core-2.46.5-cp314-cp314-linux_aarch64.android_24_arm64_v8a.whl --no-cache-dir &&
+              pip install pydantic catalogue srsly wasabi typer tqdm weasel spacy-legacy spacy-loggers langcodes click jinja2 setuptools requests --no-cache-dir &&
+              python -c 'from preshed.maps import PreshMap; m=PreshMap(); m[2**63]=1; assert m[2**63]==1; print(\"uint64 boundary: OK\")' &&
+              python -c 'import spacy; print(spacy.__version__)'
+            "
 
