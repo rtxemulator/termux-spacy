@@ -51,7 +51,7 @@ jobs:
               export MAKEFLAGS='-j1' &&
               export BLIS_ARCH=generic &&
               export ANDROID_API_LEVEL=24 &&
-              pip install --no-cache-dir 'Cython==3.1.5' &&
+              pip install --no-cache-dir 'Cython==3.1.5' setuptools wheel &&
               python -c 'import Cython; print(\"Cython:\", Cython.__version__)' &&
               python -c 'import sysconfig; print(\"SIZEOF_SIZE_T:\", sysconfig.get_config_var(\"SIZEOF_SIZE_T\")); print(\"SIZEOF_VOID_P:\", sysconfig.get_config_var(\"SIZEOF_VOID_P\"))' &&
               clang --version &&
