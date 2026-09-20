@@ -57,7 +57,15 @@ jobs:
               clang --version &&
               pip install --no-cache-dir https://github.com/Goplr/android-pydantic-core/releases/download/v2.46.5/pydantic_core-2.46.5-cp314-cp314-linux_aarch64.android_24_arm64_v8a.whl &&
               mkdir -p \$HOME/dist &&
-              pip wheel ${{ matrix.package }} -w \$HOME/dist --no-cache-dir --no-deps --no-build-isolation &&
+              if [ \"${{ matrix.package }}\" = \"preshed\" ]; then
+                pip download preshed --no-deps --no-binary :all: --no-cache-dir -d \$HOME/src &&
+                cd \$HOME/src && tar -xzf preshed-*.tar.gz && cd preshed-*/ &&
+                sed -i 's/^            return False\$/            return <bint>False/' preshed/bloom.pyx &&
+                sed -i 's/^    return True\$/    return <bint>True/' preshed/bloom.pyx &&
+                pip wheel . -w \$HOME/dist --no-cache-dir --no-deps --no-build-isolation
+              else
+                pip wheel ${{ matrix.package }} -w \$HOME/dist --no-cache-dir --no-deps --no-build-isolation
+              fi &&
               python -m zipfile -t \$HOME/dist/*.whl &&
               ls -lh \$HOME/dist/*.whl &&
               sha256sum \$HOME/dist/*.whl
